@@ -294,7 +294,6 @@
                     Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
 
                 <StackPanel Spacing="12">
-
                     <Grid ColumnDefinitions="*,Auto">
 
                         <StackPanel Spacing="3">
@@ -312,18 +311,14 @@
                                    VerticalAlignment="Center"
                                    FontSize="12"
                                    Opacity="0.5" />
-
                     </Grid>
-
                     <Border CornerRadius="8"
                             Padding="10"
                             Background="{DynamicResource SystemControlBackgroundLowBrush}">
-
                         <ListBox ItemsSource="{Binding Events}"
                                  MaxHeight="180"
                                  Background="Transparent"
                                  BorderThickness="0">
-
                             <ListBox.DataTemplates>
                                 <DataTemplate x:DataType="sys:String">
                                     <TextBlock Text="{Binding}"
@@ -331,15 +326,10 @@
                                                Margin="2,4" />
                                 </DataTemplate>
                             </ListBox.DataTemplates>
-
                         </ListBox>
-
                     </Border>
-
                 </StackPanel>
             </Border>
-
         </StackPanel>
     </ScrollViewer>
-
 </Window>
