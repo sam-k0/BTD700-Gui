@@ -1,0 +1,345 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Btd700Ctl.Gui.ViewModels"
+        xmlns:sys="using:System"
+        x:Class="Btd700Ctl.Gui.MainWindow"
+        Title="BTD 700 Controller"
+        Width="760"
+        Height="820"
+        MinWidth="650"
+        MinHeight="650">
+
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+
+    <Design.PreviewWith>
+        <vm:MainViewModel />
+    </Design.PreviewWith>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="28" Spacing="20">
+
+            <!-- Header -->
+            <Grid ColumnDefinitions="*,Auto">
+
+                <StackPanel Spacing="4">
+                    <TextBlock Text="BTD 700"
+                               FontSize="28"
+                               FontWeight="SemiBold" />
+
+                    <TextBlock Text="Dongle Controller"
+                               FontSize="14"
+                               Opacity="0.6" />
+                </StackPanel>
+
+                <!-- Connection status -->
+                <Border Grid.Column="1"
+                        Padding="14,8"
+                        CornerRadius="8"
+                        Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                        VerticalAlignment="Center">
+
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="8">
+
+                        <Ellipse Width="9"
+                                 Height="9"
+                                 Fill="LimeGreen"
+                                 VerticalAlignment="Center" />
+
+                        <TextBlock Text="{Binding StatusText}"
+                                   VerticalAlignment="Center"
+                                   FontSize="13" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+
+            <!-- Connection card -->
+            <Border CornerRadius="12"
+                    Padding="20"
+                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+
+                <Grid RowDefinitions="Auto,Auto"
+                      ColumnDefinitions="*,Auto"
+                     >
+
+                    <StackPanel Spacing="3">
+                        <TextBlock Text="Device"
+                                   FontSize="12"
+                                   Opacity="0.55" />
+
+                        <TextBlock Text="{Binding Product}"
+                                   FontSize="17"
+                                   FontWeight="SemiBold" />
+
+                        <TextBlock Text="{Binding Manufacturer}"
+                                   FontSize="12"
+                                   Opacity="0.55" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                Spacing="8"
+                                VerticalAlignment="Center">
+
+                        <Button Content="Connect"
+                                Command="{Binding ConnectCommand}"
+                                Padding="18,9" />
+
+                        <Button Content="Disconnect"
+                                Command="{Binding DisconnectCommand}"
+                                IsEnabled="{Binding IsConnected}"
+                                Padding="18,9" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1"
+                                Orientation="Horizontal"
+                                Spacing="22">
+
+                        <StackPanel>
+                            <TextBlock Text="Firmware"
+                                       FontSize="11"
+                                       Opacity="0.5" />
+                            <TextBlock Text="{Binding FirmwareVersion}"
+                                       FontSize="13" />
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Text="Serial"
+                                       FontSize="11"
+                                       Opacity="0.5" />
+                            <TextBlock Text="{Binding Serial}"
+                                       FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+
+                </Grid>
+            </Border>
+
+
+            <!-- Audio -->
+            <Border CornerRadius="12"
+                    Padding="20"
+                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+
+                <StackPanel Spacing="16">
+
+                    <StackPanel Spacing="3">
+                        <TextBlock Text="Audio"
+                                   FontSize="19"
+                                   FontWeight="SemiBold" />
+
+                        <TextBlock Text="Configure how audio is transmitted to your headphones."
+                                   FontSize="12"
+                                   Opacity="0.55" />
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="150,*"
+                          RowDefinitions="Auto,Auto"
+                         >
+
+                        <TextBlock Text="Audio mode"
+                                   VerticalAlignment="Center"
+                                   Opacity="0.75" />
+
+                        <ComboBox Grid.Column="1"
+                                  ItemsSource="{Binding AudioModeNames}"
+                                  SelectedItem="{Binding SelectedAudioMode}"
+                                  MinWidth="240" />
+
+                        <TextBlock Grid.Row="1"
+                                   Text="Transport"
+                                   VerticalAlignment="Center"
+                                   Opacity="0.75" />
+
+                        <ComboBox Grid.Row="1"
+                                  Grid.Column="1"
+                                  ItemsSource="{Binding TransportModeNames}"
+                                  SelectedItem="{Binding SelectedTransportMode}"
+                                  MinWidth="240" />
+
+                    </Grid>
+
+                    <Button Content="Apply audio settings"
+                            Command="{Binding ApplyAudioCommand}"
+                            HorizontalAlignment="Left"
+                            Padding="18,9" />
+
+                </StackPanel>
+            </Border>
+
+
+            <!-- Broadcast -->
+            <Border CornerRadius="12"
+                    Padding="20"
+                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+
+                <StackPanel Spacing="16">
+
+                    <StackPanel Spacing="3">
+                        <TextBlock Text="Broadcast"
+                                   FontSize="19"
+                                   FontWeight="SemiBold" />
+
+                        <TextBlock Text="Configure Auracast broadcast settings."
+                                   FontSize="12"
+                                   Opacity="0.55" />
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="150,*"
+                          RowDefinitions="Auto,Auto,Auto"
+                         >
+
+                        <TextBlock Text="Broadcast name"
+                                   VerticalAlignment="Center"
+                                   Opacity="0.75" />
+
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding BroadcastName}"
+                                 MinWidth="240" />
+
+                        <TextBlock Grid.Row="1"
+                                   Text="Quality"
+                                   VerticalAlignment="Center"
+                                   Opacity="0.75" />
+
+                        <ComboBox Grid.Row="1"
+                                  Grid.Column="1"
+                                  ItemsSource="{Binding BroadcastQualityNames}"
+                                  SelectedItem="{Binding SelectedQuality}"
+                                  MinWidth="240" />
+
+                        <TextBlock Grid.Row="2"
+                                   Text="Encryption"
+                                   VerticalAlignment="Center"
+                                   Opacity="0.75" />
+
+                        <ComboBox Grid.Row="2"
+                                  Grid.Column="1"
+                                  ItemsSource="{Binding EncryptionModeNames}"
+                                  SelectedItem="{Binding SelectedEncryption}"
+                                  MinWidth="240" />
+
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="8">
+
+                        <Button Content="Start"
+                                Command="{Binding StartBroadcastCommand}"
+                                Padding="18,9" />
+
+                        <Button Content="Pause"
+                                Command="{Binding PauseBroadcastCommand}"
+                                Padding="18,9" />
+
+                        <Button Content="Stop"
+                                Command="{Binding StopBroadcastCommand}"
+                                Padding="18,9" />
+
+                    </StackPanel>
+
+                </StackPanel>
+            </Border>
+
+
+            <!-- Device information -->
+            <Border CornerRadius="12"
+                    Padding="20"
+                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+
+                <StackPanel Spacing="14">
+
+                    <TextBlock Text="Device information"
+                               FontSize="19"
+                               FontWeight="SemiBold" />
+
+                    <Grid ColumnDefinitions="150,*"
+                          RowDefinitions="Auto,Auto,Auto"
+                         >
+
+                        <TextBlock Text="Manufacturer"
+                                   Opacity="0.55" />
+
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding Manufacturer}" />
+
+                        <TextBlock Grid.Row="1"
+                                   Text="Product"
+                                   Opacity="0.55" />
+
+                        <TextBlock Grid.Row="1"
+                                   Grid.Column="1"
+                                   Text="{Binding Product}" />
+
+                        <TextBlock Grid.Row="2"
+                                   Text="Serial"
+                                   Opacity="0.55" />
+
+                        <TextBlock Grid.Row="2"
+                                   Grid.Column="1"
+                                   Text="{Binding Serial}" />
+
+                    </Grid>
+
+                </StackPanel>
+            </Border>
+
+
+            <!-- Event log -->
+            <Border CornerRadius="12"
+                    Padding="20"
+                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+
+                <StackPanel Spacing="12">
+
+                    <Grid ColumnDefinitions="*,Auto">
+
+                        <StackPanel Spacing="3">
+                            <TextBlock Text="Event log"
+                                       FontSize="19"
+                                       FontWeight="SemiBold" />
+
+                            <TextBlock Text="Recent device activity"
+                                       FontSize="12"
+                                       Opacity="0.55" />
+                        </StackPanel>
+
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding Events.Count, StringFormat='{}{0} events'}"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Opacity="0.5" />
+
+                    </Grid>
+
+                    <Border CornerRadius="8"
+                            Padding="10"
+                            Background="{DynamicResource SystemControlBackgroundLowBrush}">
+
+                        <ListBox ItemsSource="{Binding Events}"
+                                 MaxHeight="180"
+                                 Background="Transparent"
+                                 BorderThickness="0">
+
+                            <ListBox.DataTemplates>
+                                <DataTemplate x:DataType="sys:String">
+                                    <TextBlock Text="{Binding}"
+                                               TextWrapping="Wrap"
+                                               Margin="2,4" />
+                                </DataTemplate>
+                            </ListBox.DataTemplates>
+
+                        </ListBox>
+
+                    </Border>
+
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+
+</Window>
