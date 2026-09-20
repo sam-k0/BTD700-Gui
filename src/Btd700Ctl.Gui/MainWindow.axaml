@@ -3,20 +3,32 @@
         xmlns:vm="using:Btd700Ctl.Gui.ViewModels"
         xmlns:sys="using:System"
         x:Class="Btd700Ctl.Gui.MainWindow"
-        Title="BTD 700 Controller"
-        Width="760"
-        Height="900"
+        Title="BTD700 Control GUI"
+        Width="900"
+        Height="760"
         CanResize="False">
 
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
 
+    <Window.Styles>
+        <Style Selector="Button.active">
+            <Setter Property="Background" Value="#2563EB" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="#2563EB" />
+        </Style>
+
+        <Style Selector="Button.active:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#1D4ED8" />
+        </Style>
+    </Window.Styles>
+
     <Design.DataContext>
         <vm:MainViewModel />
     </Design.DataContext>
 
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled">
         <StackPanel Margin="28" Spacing="20">
             <Grid ColumnDefinitions="*,Auto,Auto"
                   VerticalAlignment="Center">
@@ -24,13 +36,9 @@
                             Spacing="4"
                             VerticalAlignment="Center">
 
-                    <TextBlock Text="BTD 700"
+                    <TextBlock Text="BTD700 Control"
                                FontSize="28"
                                FontWeight="SemiBold" />
-
-                    <TextBlock Text="Dongle Controller"
-                               FontSize="14"
-                               Opacity="0.6" />
                 </StackPanel>
                 <Border Grid.Column="1"
                         Margin="0,0,12,0"
@@ -105,14 +113,14 @@
                                 Padding="12,9"
                                 Classes.active="{Binding IsGamingMode}" />
 
-                        <Button Grid.Column="2"
+                        <!-- <Button Grid.Column="2"
                                 Margin="3,0,0,0"
                                 Content="Broadcast"
                                 Command="{Binding SelectAudioModeCommand}"
                                 CommandParameter="Broadcast"
                                 HorizontalContentAlignment="Center"
                                 Padding="12,9"
-                                Classes.active="{Binding IsBroadcastMode}" />
+                                Classes.active="{Binding IsBroadcastMode}" /> -->
 
                     </Grid>
 
@@ -245,12 +253,6 @@
                     </StackPanel>
 
 
-                    <!-- Apply -->
-                    <Button IsVisible="{Binding IsNotBroadcastMode}"
-                            Content="Apply audio settings"
-                            Command="{Binding ApplyAudioCommand}"
-                            HorizontalAlignment="Left"
-                            Padding="18,9" />
 
                 </StackPanel>
             </Border>
@@ -362,7 +364,7 @@
                                 Background="{DynamicResource SystemControlBackgroundLowBrush}">
 
                             <ListBox ItemsSource="{Binding Events}"
-                                     Height="100"
+                                     Height="150"
                                      Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
                                      BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
                                      BorderThickness="1"

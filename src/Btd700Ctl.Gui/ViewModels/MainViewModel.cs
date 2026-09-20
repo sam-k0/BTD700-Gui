@@ -18,10 +18,11 @@ namespace Btd700Ctl.Gui.ViewModels;
 public partial class MainViewModel : INotifyPropertyChanged
 {
     private Btd700Driver? _driver;
+    private bool _isApplyingAudioConfig;
+    private bool _isSyncingFromDevice;
     public ICommand ToggleConnectionCommand { get; }
     public ICommand ToggleDeviceInfoPopupCommand { get; }
     public ICommand ToggleEventLogCommand { get; }
-    public ICommand ApplyAudioCommand { get; }
     public ICommand StartBroadcastCommand { get; }
     public ICommand PauseBroadcastCommand { get; }
     public ICommand StopBroadcastCommand { get; }
@@ -39,7 +40,7 @@ public partial class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    private bool _isDeviceInfoPopupOpen = false;
+    private bool _isDeviceInfoPopupOpen = true;
     public bool IsDeviceInfoPopupOpen
     {
         get => _isDeviceInfoPopupOpen;
@@ -50,7 +51,7 @@ public partial class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    private bool _isEventLogOpen = false;
+    private bool _isEventLogOpen = true;
     public bool IsEventLogOpen
     {
         get => _isEventLogOpen;
@@ -137,10 +138,9 @@ public partial class MainViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsBroadcastMode));
             OnPropertyChanged(nameof(IsNotBroadcastMode));
 
-            if (_driver != null)
+            if (_driver != null && !_isSyncingFromDevice && !_isApplyingAudioConfig)
             {
-                RefreshCodecOptions();
-                RefreshCodecInfo();
+                ApplyCurrentAudioConfiguration();
             }
         }
     }
@@ -181,7 +181,11 @@ public partial class MainViewModel : INotifyPropertyChanged
 
             _selectedTransportMode = value;
             OnPropertyChanged();
-            RefreshCodecOptions();
+
+            if (_driver != null && !_isSyncingFromDevice && !_isApplyingAudioConfig)
+            {
+                ApplyCurrentAudioConfiguration();
+            }
         }
     }
 
@@ -196,6 +200,11 @@ public partial class MainViewModel : INotifyPropertyChanged
 
             _selectedCodec = value;
             OnPropertyChanged();
+
+            if (_driver != null && !_isSyncingFromDevice && !_isApplyingAudioConfig)
+            {
+                ApplyCurrentAudioConfiguration();
+            }
         }
     }
 
@@ -217,7 +226,7 @@ public partial class MainViewModel : INotifyPropertyChanged
     public string? ActiveCodec
     {
         get => _activeCodec;
-        set {_activeCodec = value; OnPropertyChanged(); }
+        private set { _activeCodec = value; OnPropertyChanged(); }
     }
 
 
@@ -247,7 +256,6 @@ public partial class MainViewModel : INotifyPropertyChanged
         ToggleConnectionCommand = new Command(ToggleConnection);
         ToggleDeviceInfoPopupCommand = new Command(ToggleDeviceInfoPopup);
         ToggleEventLogCommand = new Command(ToggleEventLog);
-        ApplyAudioCommand = new Command(ApplyAudio);
         StartBroadcastCommand = new Command(StartBroadcast);
         PauseBroadcastCommand = new Command(PauseBroadcast);
         StopBroadcastCommand = new Command(StopBroadcast);
@@ -324,10 +332,12 @@ public partial class MainViewModel : INotifyPropertyChanged
         Connect();
     }
 
-    public void ApplyAudio()
+    private void ApplyCurrentAudioConfiguration()
     {
-        if (_driver == null || SelectedTransportMode == null)
+        if (_driver == null || SelectedTransportMode == null || _isApplyingAudioConfig)
             return;
+
+        _isApplyingAudioConfig = true;
 
         try
         {
@@ -335,17 +345,49 @@ public partial class MainViewModel : INotifyPropertyChanged
             var transport = (Btd700Interop.TransportMode)Enum.Parse(typeof(Btd700Interop.TransportMode), SelectedTransportMode);
             _driver.SetAudioMode(mode, transport);
 
+            RefreshCodecOptions();
+
+            if (SelectedAudioMode == AudioMode.Gaming &&
+                CodecNames.Contains(nameof(Btd700Interop.Codec.AptXAdaptive), StringComparer.OrdinalIgnoreCase))
+            {
+                SelectedCodec = nameof(Btd700Interop.Codec.AptXAdaptive);
+            }
+
             if (!string.IsNullOrWhiteSpace(SelectedCodec) &&
                 Enum.TryParse<Btd700Interop.Codec>(SelectedCodec, out var codec))
             {
                 _driver.SetCodec(codec);
             }
 
+            RefreshCodecInfo();
+            _ = RefreshCodecInfoAfterModeChangeAsync();
             AddEvent($"Audio: {SelectedAudioMode} / {SelectedTransportMode} / {SelectedCodec}");
         }
         catch (Btd700Exception ex)
         {
             AddEvent($"Audio error: {ex.Message}");
+        }
+        finally
+        {
+            _isApplyingAudioConfig = false;
+        }
+    }
+
+    private async Task RefreshCodecInfoAfterModeChangeAsync()
+    {
+        await Task.Delay(250);
+
+        if (_driver == null)
+            return;
+
+        try
+        {
+            RefreshCodecOptions();
+            RefreshCodecInfo();
+        }
+        catch (Btd700Exception ex)
+        {
+            AddEvent($"Codec refresh error: {ex.Message}");
         }
     }
 
@@ -408,8 +450,17 @@ public partial class MainViewModel : INotifyPropertyChanged
         try
         {
             var config = _driver.QueryAudioConfig();
-            SelectedAudioMode = config.Mode;
-            SelectedTransportMode = config.Transport.ToString();
+
+            _isSyncingFromDevice = true;
+            try
+            {
+                SelectedAudioMode = config.Mode;
+                SelectedTransportMode = config.Transport.ToString();
+            }
+            finally
+            {
+                _isSyncingFromDevice = false;
+            }
 
             RefreshCodecOptions();
             RefreshCodecInfo();
@@ -423,6 +474,7 @@ public partial class MainViewModel : INotifyPropertyChanged
         {
             CodecNames = Array.Empty<string>();
             SelectedCodec = null;
+            ActiveCodec = "Unknown";
             return;
         }
 
