@@ -297,9 +297,7 @@ public class Btd700Driver : IDisposable
                 case Btd700Interop.EventType.LeAudioStateChanged:
                 case Btd700Interop.EventType.SinkTransportChanged:
                 case Btd700Interop.EventType.GamingAvailabilityChanged:
-                    // The event itself is enough to tell the UI that
-                    // something changed. Don't query the device from
-                    // inside the native callback.
+                    // Refresh the device state on the UI thread after a native change event.
                     break;
             }
         }

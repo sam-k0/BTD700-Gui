@@ -1,4 +1,6 @@
+## BTD700 Control GUI
 
+Aims to be a desktop app for the Sennheiser BTD700 on Linux.
 
 ### Building
 

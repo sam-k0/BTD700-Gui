@@ -3,18 +3,23 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows.Input;
+using Avalonia.Logging;
+using Avalonia.Media;
+using Avalonia.Threading;
 using Btd700Ctl;
 using Btd700Ctl.Interop;
+using static Btd700Ctl.Interop.Btd700Interop;
 
 namespace Btd700Ctl.Gui.ViewModels;
 
 public class MainViewModel : INotifyPropertyChanged
 {
     private Btd700Driver? _driver;
-
-    public ICommand ConnectCommand { get; }
-    public ICommand DisconnectCommand { get; }
+    public ICommand ToggleConnectionCommand { get; }
+    public ICommand ToggleDeviceInfoPopupCommand { get; }
+    public ICommand ToggleEventLogCommand { get; }
     public ICommand ApplyAudioCommand { get; }
     public ICommand StartBroadcastCommand { get; }
     public ICommand PauseBroadcastCommand { get; }
@@ -24,7 +29,52 @@ public class MainViewModel : INotifyPropertyChanged
     public bool IsConnected
     {
         get => _isConnected;
-        set { _isConnected = value; OnPropertyChanged(); }
+        set
+        {
+            _isConnected = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ConnectionBrush));
+            OnPropertyChanged(nameof(ToggleConnectionButtonText));
+        }
+    }
+
+    private bool _isDeviceInfoPopupOpen = false;
+    public bool IsDeviceInfoPopupOpen
+    {
+        get => _isDeviceInfoPopupOpen;
+        set
+        {
+            _isDeviceInfoPopupOpen = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private bool _isEventLogOpen = false;
+    public bool IsEventLogOpen
+    {
+        get => _isEventLogOpen;
+        set
+        {
+            _isEventLogOpen = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public IBrush ConnectionBrush => IsConnected ? Brushes.LimeGreen : Brushes.IndianRed;
+    public string ToggleConnectionButtonText => IsConnected ? "Disconnect" : "Connect";
+    public string DeviceInfoToggleText => IsDeviceInfoPopupOpen ? "Hide" : "Show";
+    public string EventLogToggleText => IsEventLogOpen ? "Hide" : "Show";
+
+    public void ToggleDeviceInfoPopup()
+    {
+        IsDeviceInfoPopupOpen = !IsDeviceInfoPopupOpen;
+        OnPropertyChanged(nameof(DeviceInfoToggleText));
+    }
+
+    public void ToggleEventLog()
+    {
+        IsEventLogOpen = !IsEventLogOpen;
+        OnPropertyChanged(nameof(EventLogToggleText));
     }
 
     private string _statusText = "Disconnected";
@@ -97,6 +147,13 @@ public class MainViewModel : INotifyPropertyChanged
         set { _selectedEncryption = value; OnPropertyChanged(); }
     }
 
+    private string? _activeCodec;
+    public string? ActiveCodec
+    {
+        get => _activeCodec;
+        set {_activeCodec = value; OnPropertyChanged(); }
+    }
+
     public ObservableCollection<string> Events { get; } = new();
     public string[] AudioModeNames { get; }
     public string[] TransportModeNames { get; }
@@ -105,8 +162,9 @@ public class MainViewModel : INotifyPropertyChanged
 
     public MainViewModel()
     {
-        ConnectCommand = new Command(Connect);
-        DisconnectCommand = new Command(Disconnect);
+        ToggleConnectionCommand = new Command(ToggleConnection);
+        ToggleDeviceInfoPopupCommand = new Command(ToggleDeviceInfoPopup);
+        ToggleEventLogCommand = new Command(ToggleEventLog);
         ApplyAudioCommand = new Command(ApplyAudio);
         StartBroadcastCommand = new Command(StartBroadcast);
         PauseBroadcastCommand = new Command(PauseBroadcast);
@@ -118,6 +176,16 @@ public class MainViewModel : INotifyPropertyChanged
         EncryptionModeNames = Enum.GetNames<Btd700Interop.BroadcastEncryption>();
     }
 
+    public async Task InitializeAsync()
+    {
+        await Task.Run(() =>{
+            if(_driver == null)
+            {
+                Connect();
+            }
+        });
+    }
+
     public void Connect()
     {
         try
@@ -127,10 +195,16 @@ public class MainViewModel : INotifyPropertyChanged
             _driver.DeviceInfoChanged += OnDeviceInfoChanged;
             _driver.AudioConfigChanged += OnAudioConfigChanged;
             _driver.FirmwareVersionChanged += OnFirmwareChanged;
-            _driver.Connected += (_, _) => { IsConnected = true; StatusText = "Connected"; RefreshDeviceInfo(); RefreshAudioConfig(); };
+            _driver.Connected += (_, _) => {
+                    IsConnected = true; 
+                    StatusText = "Connected";
+                    RefreshDeviceInfo();
+                    RefreshAudioConfig(); 
+                };
             _driver.Disconnected += (_, _) => { IsConnected = false; StatusText = "Disconnected"; };
 
             _driver.Connect();
+            AddEvent("Connected");
         }
         catch (Btd700Exception ex)
         {
@@ -155,6 +229,16 @@ public class MainViewModel : INotifyPropertyChanged
         IsConnected = false;
         StatusText = "Disconnected";
         AddEvent("Disconnected");
+    }
+
+    public void ToggleConnection()
+    {
+        if(IsConnected && _driver != null)
+        {
+            Disconnect();
+            return;
+        }
+        Connect();
     }
 
     public void ApplyAudio()
@@ -236,11 +320,37 @@ public class MainViewModel : INotifyPropertyChanged
             var config = _driver.QueryAudioConfig();
             SelectedAudioMode = config.Mode.ToString();
             SelectedTransportMode = config.Transport.ToString();
+
+            RefreshCodecInfo();
         }
         catch (Btd700Exception) { }
     }
 
-    private void OnEventReceived(object? sender, Btd700EventArgs e) => AddEvent($"{e.Timestamp:HH:mm:ss} [{e.Type}]");
+    private void RefreshCodecInfo()
+    {
+        if (_driver == null) return;
+
+        try
+        {
+            var codecMask = _driver.QueryActiveCodec();
+            ActiveCodec = Btd700Interop.CodecToString(codecMask);
+        }
+        catch (Btd700Exception)
+        {
+            ActiveCodec = "Unknown";
+        }
+    }
+
+    private void OnEventReceived(object? sender, Btd700EventArgs e)
+    {
+        AddEvent($"{e.Timestamp:HH:mm:ss} [{e.Type}]");
+
+        if (e.Type == Btd700Interop.EventType.CodecChanged)
+        {
+            Dispatcher.UIThread.Post(() => RefreshCodecInfo());
+        }
+    }
+
     private void OnDeviceInfoChanged(object? sender, DeviceInfoEventArgs e) => RefreshDeviceInfo();
     private void OnAudioConfigChanged(object? sender, AudioConfigEventArgs e) => RefreshAudioConfig();
     private void OnFirmwareChanged(object? sender, FirmwareVersionEventArgs e) => FirmwareVersion = e.Version;
