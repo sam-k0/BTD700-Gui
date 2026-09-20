@@ -10,11 +10,12 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Btd700Ctl;
 using Btd700Ctl.Interop;
+using CommunityToolkit.Mvvm.Input;
 using static Btd700Ctl.Interop.Btd700Interop;
 
 namespace Btd700Ctl.Gui.ViewModels;
 
-public class MainViewModel : INotifyPropertyChanged
+public partial class MainViewModel : INotifyPropertyChanged
 {
     private Btd700Driver? _driver;
     public ICommand ToggleConnectionCommand { get; }
@@ -119,18 +120,83 @@ public class MainViewModel : INotifyPropertyChanged
         set { _broadcastName = value; OnPropertyChanged(); }
     }
 
-    private string? _selectedAudioMode;
-    public string? SelectedAudioMode
+    private AudioMode _selectedAudioMode = AudioMode.HighQuality;
+    public AudioMode SelectedAudioMode
     {
         get => _selectedAudioMode;
-        set { _selectedAudioMode = value; OnPropertyChanged(); }
+        set
+        {
+            if (_selectedAudioMode == value)
+                return;
+
+            _selectedAudioMode = value;
+
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsStandardMode));
+            OnPropertyChanged(nameof(IsGamingMode));
+            OnPropertyChanged(nameof(IsBroadcastMode));
+            OnPropertyChanged(nameof(IsNotBroadcastMode));
+
+            if (_driver != null)
+            {
+                RefreshCodecOptions();
+                RefreshCodecInfo();
+            }
+        }
+    }
+
+    public bool IsStandardMode =>
+        SelectedAudioMode == AudioMode.HighQuality;
+
+    public bool IsGamingMode =>
+        SelectedAudioMode == AudioMode.Gaming;
+
+    public bool IsBroadcastMode =>
+        SelectedAudioMode == AudioMode.Broadcast;
+
+    public bool IsNotBroadcastMode =>
+        SelectedAudioMode != AudioMode.Broadcast;
+
+    [RelayCommand]
+    private void SelectAudioMode(string mode)
+    {
+        var normalizedMode = mode switch
+        {
+            "Standard" => nameof(AudioMode.HighQuality),
+            _ => mode
+        };
+
+        if (Enum.TryParse<AudioMode>(normalizedMode, out var audioMode))
+            SelectedAudioMode = audioMode;
     }
 
     private string? _selectedTransportMode;
     public string? SelectedTransportMode
     {
         get => _selectedTransportMode;
-        set { _selectedTransportMode = value; OnPropertyChanged(); }
+        set
+        {
+            if (_selectedTransportMode == value)
+                return;
+
+            _selectedTransportMode = value;
+            OnPropertyChanged();
+            RefreshCodecOptions();
+        }
+    }
+
+    private string? _selectedCodec;
+    public string? SelectedCodec
+    {
+        get => _selectedCodec;
+        set
+        {
+            if (_selectedCodec == value)
+                return;
+
+            _selectedCodec = value;
+            OnPropertyChanged();
+        }
     }
 
     private string? _selectedQuality;
@@ -154,11 +220,27 @@ public class MainViewModel : INotifyPropertyChanged
         set {_activeCodec = value; OnPropertyChanged(); }
     }
 
+
+
     public ObservableCollection<string> Events { get; } = new();
     public string[] AudioModeNames { get; }
     public string[] TransportModeNames { get; }
     public string[] BroadcastQualityNames { get; }
     public string[] EncryptionModeNames { get; }
+
+    private string[] _codecNames = Array.Empty<string>();
+    public string[] CodecNames
+    {
+        get => _codecNames;
+        private set
+        {
+            if (_codecNames.SequenceEqual(value))
+                return;
+
+            _codecNames = value;
+            OnPropertyChanged();
+        }
+    }
 
     public MainViewModel()
     {
@@ -174,6 +256,7 @@ public class MainViewModel : INotifyPropertyChanged
         TransportModeNames = Enum.GetNames<Btd700Interop.TransportMode>();
         BroadcastQualityNames = Enum.GetNames<Btd700Interop.BroadcastQuality>();
         EncryptionModeNames = Enum.GetNames<Btd700Interop.BroadcastEncryption>();
+        CodecNames = Array.Empty<string>();
     }
 
     public async Task InitializeAsync()
@@ -243,15 +326,22 @@ public class MainViewModel : INotifyPropertyChanged
 
     public void ApplyAudio()
     {
-        if (_driver == null || SelectedAudioMode == null || SelectedTransportMode == null)
+        if (_driver == null || SelectedTransportMode == null)
             return;
 
         try
         {
-            var mode = (Btd700Interop.AudioMode)Enum.Parse(typeof(Btd700Interop.AudioMode), SelectedAudioMode);
+            var mode = SelectedAudioMode;
             var transport = (Btd700Interop.TransportMode)Enum.Parse(typeof(Btd700Interop.TransportMode), SelectedTransportMode);
             _driver.SetAudioMode(mode, transport);
-            AddEvent($"Audio: {SelectedAudioMode} / {SelectedTransportMode}");
+
+            if (!string.IsNullOrWhiteSpace(SelectedCodec) &&
+                Enum.TryParse<Btd700Interop.Codec>(SelectedCodec, out var codec))
+            {
+                _driver.SetCodec(codec);
+            }
+
+            AddEvent($"Audio: {SelectedAudioMode} / {SelectedTransportMode} / {SelectedCodec}");
         }
         catch (Btd700Exception ex)
         {
@@ -318,12 +408,52 @@ public class MainViewModel : INotifyPropertyChanged
         try
         {
             var config = _driver.QueryAudioConfig();
-            SelectedAudioMode = config.Mode.ToString();
+            SelectedAudioMode = config.Mode;
             SelectedTransportMode = config.Transport.ToString();
 
+            RefreshCodecOptions();
             RefreshCodecInfo();
         }
         catch (Btd700Exception) { }
+    }
+
+    private void RefreshCodecOptions()
+    {
+        if (_driver == null)
+        {
+            CodecNames = Array.Empty<string>();
+            SelectedCodec = null;
+            return;
+        }
+
+        try
+        {
+            var supportedMask = _driver.QuerySupportedCodecs();
+            var activeMask = _driver.QueryActiveCodec();
+
+            var supported = Enum.GetValues<Btd700Interop.Codec>()
+                .Where(codec => (supportedMask & (1 << (int)codec)) != 0)
+                .Select(codec => codec.ToString())
+                .ToArray();
+
+            CodecNames = supported;
+
+            var activeName = Enum.GetValues<Btd700Interop.Codec>()
+                .Where(codec => (activeMask & (1 << (int)codec)) != 0)
+                .Select(codec => codec.ToString())
+                .FirstOrDefault();
+
+            SelectedCodec = activeName ?? supported.FirstOrDefault();
+            ActiveCodec = Btd700Interop.CodecToString(activeMask);
+            OnPropertyChanged(nameof(CodecNames));
+            OnPropertyChanged(nameof(SelectedCodec));
+        }
+        catch (Btd700Exception)
+        {
+            CodecNames = Array.Empty<string>();
+            SelectedCodec = null;
+            ActiveCodec = "Unknown";
+        }
     }
 
     private void RefreshCodecInfo()
@@ -334,6 +464,14 @@ public class MainViewModel : INotifyPropertyChanged
         {
             var codecMask = _driver.QueryActiveCodec();
             ActiveCodec = Btd700Interop.CodecToString(codecMask);
+
+            var activeName = Enum.GetValues<Btd700Interop.Codec>()
+                .Where(codec => (codecMask & (1 << (int)codec)) != 0)
+                .Select(codec => codec.ToString())
+                .FirstOrDefault();
+
+            if (activeName != null)
+                SelectedCodec = activeName;
         }
         catch (Btd700Exception)
         {
@@ -345,9 +483,16 @@ public class MainViewModel : INotifyPropertyChanged
     {
         AddEvent($"{e.Timestamp:HH:mm:ss} [{e.Type}]");
 
-        if (e.Type == Btd700Interop.EventType.CodecChanged)
+        if (e.Type == Btd700Interop.EventType.AudioModeChanged ||
+            e.Type == Btd700Interop.EventType.SinkTransportChanged ||
+            e.Type == Btd700Interop.EventType.CodecChanged ||
+            e.Type == Btd700Interop.EventType.GamingAvailabilityChanged)
         {
-            Dispatcher.UIThread.Post(() => RefreshCodecInfo());
+            Dispatcher.UIThread.Post(() =>
+            {
+                RefreshAudioConfig();
+                RefreshCodecInfo();
+            });
         }
     }
 

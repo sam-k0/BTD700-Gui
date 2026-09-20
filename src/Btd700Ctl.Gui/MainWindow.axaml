@@ -6,8 +6,7 @@
         Title="BTD 700 Controller"
         Width="760"
         Height="900"
-        MinWidth="760"
-        MinHeight="900">
+        CanResize="False">
 
     <Window.DataContext>
         <vm:MainViewModel />
@@ -67,12 +66,13 @@
 
 
             <!-- Audio -->
+
             <Border CornerRadius="12"
                     Padding="20"
                     Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
-
                 <StackPanel Spacing="16">
 
+                    <!-- Header -->
                     <StackPanel Spacing="3">
                         <TextBlock Text="Audio"
                                    FontSize="19"
@@ -83,106 +83,151 @@
                                    Opacity="0.55" />
                     </StackPanel>
 
-                    <Grid ColumnDefinitions="150,*"
-                          RowDefinitions="Auto,Auto,Auto"
-                          >
 
-                        <TextBlock Text="Audio mode"
-                                   VerticalAlignment="Center"
-                                   Opacity="0.75" />
+                    <!-- Mode selector -->
+                    <Grid ColumnDefinitions="*,*,*">
 
-                        <ComboBox Grid.Column="1"
-                                  ItemsSource="{Binding AudioModeNames}"
-                                  SelectedItem="{Binding SelectedAudioMode}"
-                                  MinWidth="240" />
+                        <Button Grid.Column="0"
+                                Margin="0,0,3,0"
+                                Content="Standard"
+                                Command="{Binding SelectAudioModeCommand}"
+                                CommandParameter="HighQuality"
+                                HorizontalContentAlignment="Center"
+                                Padding="12,9"
+                                Classes.active="{Binding IsStandardMode}" />
 
-                        <TextBlock Grid.Row="1"
-                                   Text="Transport"
-                                   VerticalAlignment="Center"
-                                   Opacity="0.75" />
+                        <Button Grid.Column="1"
+                                Margin="3,0"
+                                Content="Gaming"
+                                Command="{Binding SelectAudioModeCommand}"
+                                CommandParameter="Gaming"
+                                HorizontalContentAlignment="Center"
+                                Padding="12,9"
+                                Classes.active="{Binding IsGamingMode}" />
 
-                        <ComboBox Grid.Row="1"
-                                  Grid.Column="1"
-                                  ItemsSource="{Binding TransportModeNames}"
-                                  SelectedItem="{Binding SelectedTransportMode}"
-                                  MinWidth="240" />
-
-                        <TextBlock Grid.Row="2"
-                                   Text="Active Codec"
-                                   VerticalAlignment="Center"
-                                   Opacity="0.75" />
-
-                        <TextBlock Grid.Row="2"
-                                   Grid.Column="1"
-                                   Text="{Binding ActiveCodec}"
-                                   FontSize="12"
-                                   Opacity="0.75" />
+                        <Button Grid.Column="2"
+                                Margin="3,0,0,0"
+                                Content="Broadcast"
+                                Command="{Binding SelectAudioModeCommand}"
+                                CommandParameter="Broadcast"
+                                HorizontalContentAlignment="Center"
+                                Padding="12,9"
+                                Classes.active="{Binding IsBroadcastMode}" />
 
                     </Grid>
 
-                    <Button Content="Apply audio settings"
-                            Command="{Binding ApplyAudioCommand}"
-                            HorizontalAlignment="Left"
-                            Padding="18,9" />
 
-                </StackPanel>
-            </Border>
+                    <!-- ========================================================= -->
+                    <!-- Standard Mode                                             -->
+                    <!-- ========================================================= -->
+
+                    <Border IsVisible="{Binding IsStandardMode}"
+                            Padding="4">
+
+                        <Grid ColumnDefinitions="150,*"
+                              RowDefinitions="Auto,Auto">
+
+                            <TextBlock Text="Transport"
+                                       VerticalAlignment="Center"
+                                       Opacity="0.75" />
+
+                            <ComboBox Grid.Column="1"
+                                      ItemsSource="{Binding TransportModeNames}"
+                                      SelectedItem="{Binding SelectedTransportMode}"
+                                      MinWidth="240" />
+
+                            <TextBlock Grid.Row="1"
+                                       Text="Codec"
+                                       VerticalAlignment="Center"
+                                       Opacity="0.75" />
+
+                            <ComboBox Grid.Row="1"
+                                      Grid.Column="1"
+                                      ItemsSource="{Binding CodecNames}"
+                                      SelectedItem="{Binding SelectedCodec}"
+                                      MinWidth="240" />
+
+                        </Grid>
+
+                    </Border>
 
 
-            <!-- Broadcast -->
-            <Border CornerRadius="12"
-                    Padding="20"
-                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+                    <!-- ========================================================= -->
+                    <!-- Gaming Mode                                               -->
+                    <!-- ========================================================= -->
 
-                <StackPanel Spacing="16">
+                    <Border IsVisible="{Binding IsGamingMode}"
+                            Padding="4" />
 
-                    <StackPanel Spacing="3">
-                        <TextBlock Text="Broadcast"
-                                   FontSize="19"
-                                   FontWeight="SemiBold" />
 
-                        <TextBlock Text="Configure Auracast broadcast settings."
-                                   FontSize="12"
-                                   Opacity="0.55" />
-                    </StackPanel>
+                    <!-- ========================================================= -->
+                    <!-- Broadcast Mode                                            -->
+                    <!-- ========================================================= -->
 
-                    <Grid ColumnDefinitions="150,*"
-                          RowDefinitions="Auto,Auto,Auto"
-                          >
+                    <Border IsVisible="{Binding IsBroadcastMode}"
+                            Padding="4">
 
-                        <TextBlock Text="Broadcast name"
-                                   VerticalAlignment="Center"
-                                   Opacity="0.75" />
+                        <Grid ColumnDefinitions="150,*"
+                              RowDefinitions="Auto,Auto,Auto">
 
-                        <TextBox Grid.Column="1"
-                                 Text="{Binding BroadcastName}"
-                                 MinWidth="240" />
+                            <TextBlock Text="Broadcast name"
+                                       VerticalAlignment="Center"
+                                       Opacity="0.75" />
 
-                        <TextBlock Grid.Row="1"
-                                   Text="Quality"
-                                   VerticalAlignment="Center"
-                                   Opacity="0.75" />
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding BroadcastName}"
+                                     MinWidth="240" />
 
-                        <ComboBox Grid.Row="1"
-                                  Grid.Column="1"
-                                  ItemsSource="{Binding BroadcastQualityNames}"
-                                  SelectedItem="{Binding SelectedQuality}"
-                                  MinWidth="240" />
+                            <TextBlock Grid.Row="1"
+                                       Text="Quality"
+                                       VerticalAlignment="Center"
+                                       Opacity="0.75" />
 
-                        <TextBlock Grid.Row="2"
-                                   Text="Encryption"
-                                   VerticalAlignment="Center"
-                                   Opacity="0.75" />
+                            <ComboBox Grid.Row="1"
+                                      Grid.Column="1"
+                                      ItemsSource="{Binding BroadcastQualityNames}"
+                                      SelectedItem="{Binding SelectedQuality}"
+                                      MinWidth="240" />
 
-                        <ComboBox Grid.Row="2"
-                                  Grid.Column="1"
-                                  ItemsSource="{Binding EncryptionModeNames}"
-                                  SelectedItem="{Binding SelectedEncryption}"
-                                  MinWidth="240" />
+                            <TextBlock Grid.Row="2"
+                                       Text="Encryption"
+                                       VerticalAlignment="Center"
+                                       Opacity="0.75" />
 
-                    </Grid>
+                            <ComboBox Grid.Row="2"
+                                      Grid.Column="1"
+                                      ItemsSource="{Binding EncryptionModeNames}"
+                                      SelectedItem="{Binding SelectedEncryption}"
+                                      MinWidth="240" />
 
-                    <StackPanel Orientation="Horizontal"
+                        </Grid>
+
+                    </Border>
+
+
+                    <!-- Active codec -->
+                    <Border IsVisible="{Binding IsNotBroadcastMode}"
+                            Padding="4">
+
+                        <Grid ColumnDefinitions="150,*">
+
+                            <TextBlock Text="Active Codec"
+                                       VerticalAlignment="Center"
+                                       Opacity="0.75" />
+
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding ActiveCodec}"
+                                       FontSize="12"
+                                       Opacity="0.75" />
+
+                        </Grid>
+
+                    </Border>
+
+
+                    <!-- Broadcast controls -->
+                    <StackPanel IsVisible="{Binding IsBroadcastMode}"
+                                Orientation="Horizontal"
                                 Spacing="8">
 
                         <Button Content="Start"
@@ -199,8 +244,17 @@
 
                     </StackPanel>
 
+
+                    <!-- Apply -->
+                    <Button IsVisible="{Binding IsNotBroadcastMode}"
+                            Content="Apply audio settings"
+                            Command="{Binding ApplyAudioCommand}"
+                            HorizontalAlignment="Left"
+                            Padding="18,9" />
+
                 </StackPanel>
             </Border>
+
 
 
             <Grid ColumnDefinitions="*,*">
@@ -303,24 +357,24 @@
                         </Grid>
 
                         <Border IsVisible="{Binding IsEventLogOpen}"
-                            CornerRadius="8"
-                            Padding="10"
-                            Background="{DynamicResource SystemControlBackgroundLowBrush}">
+                                CornerRadius="8"
+                                Padding="10"
+                                Background="{DynamicResource SystemControlBackgroundLowBrush}">
 
                             <ListBox ItemsSource="{Binding Events}"
-                                    Height="100"
-                                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-                                    BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="6"
-                                    Padding="4">
+                                     Height="100"
+                                     Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                     BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                                     BorderThickness="1"
+                                     CornerRadius="6"
+                                     Padding="4">
 
                                 <ListBox.DataTemplates>
 
                                     <DataTemplate x:DataType="sys:String">
                                         <TextBlock Text="{Binding}"
-                                                TextWrapping="Wrap"
-                                                Margin="6,4" />
+                                                   TextWrapping="Wrap"
+                                                   Margin="6,4" />
                                     </DataTemplate>
 
                                 </ListBox.DataTemplates>
