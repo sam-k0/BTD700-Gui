@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -360,7 +360,6 @@ public partial class MainViewModel : INotifyPropertyChanged
             }
 
             RefreshCodecInfo();
-            _ = RefreshCodecInfoAfterModeChangeAsync();
             AddEvent($"Audio: {SelectedAudioMode} / {SelectedTransportMode} / {SelectedCodec}");
         }
         catch (Btd700Exception ex)
@@ -370,24 +369,6 @@ public partial class MainViewModel : INotifyPropertyChanged
         finally
         {
             _isApplyingAudioConfig = false;
-        }
-    }
-
-    private async Task RefreshCodecInfoAfterModeChangeAsync()
-    {
-        await Task.Delay(250);
-
-        if (_driver == null)
-            return;
-
-        try
-        {
-            RefreshCodecOptions();
-            RefreshCodecInfo();
-        }
-        catch (Btd700Exception ex)
-        {
-            AddEvent($"Codec refresh error: {ex.Message}");
         }
     }
 
@@ -495,10 +476,17 @@ public partial class MainViewModel : INotifyPropertyChanged
                 .Select(codec => codec.ToString())
                 .FirstOrDefault();
 
-            SelectedCodec = activeName ?? supported.FirstOrDefault();
+            _isSyncingFromDevice = true;
+            try
+            {
+                SelectedCodec = activeName ?? supported.FirstOrDefault();
+            }
+            finally
+            {
+                _isSyncingFromDevice = false;
+            }
+
             ActiveCodec = Btd700Interop.CodecToString(activeMask);
-            OnPropertyChanged(nameof(CodecNames));
-            OnPropertyChanged(nameof(SelectedCodec));
         }
         catch (Btd700Exception)
         {
@@ -523,7 +511,17 @@ public partial class MainViewModel : INotifyPropertyChanged
                 .FirstOrDefault();
 
             if (activeName != null)
-                SelectedCodec = activeName;
+            {
+                _isSyncingFromDevice = true;
+                try
+                {
+                    SelectedCodec = activeName;
+                }
+                finally
+                {
+                    _isSyncingFromDevice = false;
+                }
+            }
         }
         catch (Btd700Exception)
         {
@@ -552,11 +550,17 @@ public partial class MainViewModel : INotifyPropertyChanged
     private void OnAudioConfigChanged(object? sender, AudioConfigEventArgs e) => RefreshAudioConfig();
     private void OnFirmwareChanged(object? sender, FirmwareVersionEventArgs e) => FirmwareVersion = e.Version;
 
-    private void AddEvent(string message) => Events.Add(message);
+    private void AddEvent(string message) => Dispatcher.UIThread.Invoke(() => Events.Add(message));
 
     public event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    {   
+        // dispatch change to ui thread
+        if (Dispatcher.UIThread.CheckAccess())
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        else
+            Dispatcher.UIThread.Post(() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName)));
+    }
 }
 
 internal class Command : ICommand
