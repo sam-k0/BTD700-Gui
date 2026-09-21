@@ -358,6 +358,15 @@ public partial class MainViewModel : INotifyPropertyChanged
         {
             var mode = SelectedAudioMode;
             var transport = (Btd700Interop.TransportMode)Enum.Parse(typeof(Btd700Interop.TransportMode), SelectedTransportMode);
+
+            // stop broadcast before switching to a different mode
+            if (IsBroadcasting && mode != AudioMode.Broadcast)
+            {
+                _driver.StopBroadcast();
+                IsBroadcasting = false;
+                AddEvent("Broadcast stopped before switching audio mode");
+            }
+
             _driver.SetAudioMode(mode, transport);
 
             RefreshCodecOptions();

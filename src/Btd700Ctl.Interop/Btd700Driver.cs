@@ -158,12 +158,15 @@ public class Btd700Driver : IDisposable
 
     public byte[] QueryBroadcastKey()
     {
-        var buf = new byte[32];
+        var buf = new byte[256];
         var err = Btd700Interop.DriverBroadcastKey(_handle, buf, (nuint)buf.Length, out var outLen);
         if (err != Btd700Interop.Error.Ok)
             throw new Btd700Exception(err, "Failed to query broadcast key");
-        var result = new byte[(int)outLen];
-        Array.Copy(buf, result, result.Length);
+
+        var resultLen = Math.Min((int)outLen, buf.Length);
+        var result = new byte[resultLen];
+        if (resultLen > 0)
+            Array.Copy(buf, result, resultLen);
         return result;
     }
 
