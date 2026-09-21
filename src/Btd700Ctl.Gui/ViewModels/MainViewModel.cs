@@ -24,7 +24,6 @@ public partial class MainViewModel : INotifyPropertyChanged
     public ICommand ToggleDeviceInfoPopupCommand { get; }
     public ICommand ToggleEventLogCommand { get; }
     public ICommand StartBroadcastCommand { get; }
-    public ICommand PauseBroadcastCommand { get; }
     public ICommand StopBroadcastCommand { get; }
 
     private bool _isConnected;
@@ -208,18 +207,35 @@ public partial class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    private string? _selectedQuality;
+    private string? _selectedQuality = nameof(Btd700Interop.BroadcastQuality.High);
     public string? SelectedQuality
     {
         get => _selectedQuality;
         set { _selectedQuality = value; OnPropertyChanged(); }
     }
 
-    private string? _selectedEncryption;
+    private string? _selectedEncryption = nameof(Btd700Interop.BroadcastEncryption.Off);
     public string? SelectedEncryption
     {
         get => _selectedEncryption;
-        set { _selectedEncryption = value; OnPropertyChanged(); }
+        set { _selectedEncryption = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsEncryptionOn)); }
+    }
+
+    public bool IsEncryptionOn =>
+        SelectedEncryption == nameof(Btd700Interop.BroadcastEncryption.On);
+
+    private bool _isBroadcasting;
+    public bool IsBroadcasting
+    {
+        get => _isBroadcasting;
+        private set { _isBroadcasting = value; OnPropertyChanged(); }
+    }
+
+    private string _broadcastKey = string.Empty;
+    public string BroadcastKey
+    {
+        get => _broadcastKey;
+        set { _broadcastKey = value; OnPropertyChanged(); }
     }
 
     private string? _activeCodec;
@@ -257,7 +273,6 @@ public partial class MainViewModel : INotifyPropertyChanged
         ToggleDeviceInfoPopupCommand = new Command(ToggleDeviceInfoPopup);
         ToggleEventLogCommand = new Command(ToggleEventLog);
         StartBroadcastCommand = new Command(StartBroadcast);
-        PauseBroadcastCommand = new Command(PauseBroadcast);
         StopBroadcastCommand = new Command(StopBroadcast);
 
         AudioModeNames = Enum.GetNames<Btd700Interop.AudioMode>();
@@ -377,13 +392,23 @@ public partial class MainViewModel : INotifyPropertyChanged
         if (_driver == null) return;
         try
         {
-            var encryption = SelectedEncryption != null ?
-                (Btd700Interop.BroadcastEncryption)Enum.Parse(typeof(Btd700Interop.BroadcastEncryption), SelectedEncryption) :
-                Btd700Interop.BroadcastEncryption.Off;
-            var quality = SelectedQuality != null ?
-                (Btd700Interop.BroadcastQuality)Enum.Parse(typeof(Btd700Interop.BroadcastQuality), SelectedQuality) :
-                Btd700Interop.BroadcastQuality.High;
+            var encryption = Enum.TryParse<Btd700Interop.BroadcastEncryption>(SelectedEncryption, out var enc) ? enc : Btd700Interop.BroadcastEncryption.Off;
+            var quality = Enum.TryParse<Btd700Interop.BroadcastQuality>(SelectedQuality, out var q) ? q : Btd700Interop.BroadcastQuality.High;
+            if (encryption == Btd700Interop.BroadcastEncryption.On)
+            {
+                var key = System.Text.Encoding.UTF8.GetBytes(BroadcastKey);
+                if (key.Length < 4 || key.Length > 16)
+                {
+                    AddEvent("Broadcast key must be 4-16 characters");
+                    return;
+                }
+                _driver.SetBroadcastKey(key);
+            }
+
+            if (!string.IsNullOrWhiteSpace(BroadcastName) && BroadcastName != "---")
+                _driver.SetBroadcastName(BroadcastName);
             _driver.StartBroadcast(encryption, quality);
+            IsBroadcasting = true;
             AddEvent($"Broadcast started (enc:{encryption}, q:{quality})");
         }
         catch (Btd700Exception ex)
@@ -392,17 +417,13 @@ public partial class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    public void PauseBroadcast()
-    {
-        AddEvent("Broadcast pause not supported by hardware");
-    }
-
     public void StopBroadcast()
     {
         if (_driver == null) return;
         try
         {
             _driver.StopBroadcast();
+            IsBroadcasting = false;
             AddEvent("Broadcast stopped");
         }
         catch (Btd700Exception ex)
@@ -425,6 +446,21 @@ public partial class MainViewModel : INotifyPropertyChanged
         catch (Btd700Exception) { }
     }
 
+    private void RefreshBroadcastInfo()
+    {
+        if (_driver == null) return;
+        try
+        {
+            var info = _driver.QueryBroadcastInfo();
+            SelectedQuality = info.Quality.ToString();
+            SelectedEncryption = info.Encryption.ToString();
+            IsBroadcasting = info.State == Btd700Interop.BroadcastState.OnPublic;
+            BroadcastName = _driver.QueryBroadcastName();
+            BroadcastKey = System.Text.Encoding.UTF8.GetString(_driver.QueryBroadcastKey());
+        }
+        catch (Btd700Exception) { }
+    }
+
     private void RefreshAudioConfig()
     {
         if (_driver == null) return;
@@ -443,6 +479,7 @@ public partial class MainViewModel : INotifyPropertyChanged
                 _isSyncingFromDevice = false;
             }
 
+            RefreshBroadcastInfo();
             RefreshCodecOptions();
             RefreshCodecInfo();
         }

@@ -113,14 +113,14 @@
                                 Padding="12,9"
                                 Classes.active="{Binding IsGamingMode}" />
 
-                        <!-- <Button Grid.Column="2"
+                        <Button Grid.Column="2"
                                 Margin="3,0,0,0"
                                 Content="Broadcast"
                                 Command="{Binding SelectAudioModeCommand}"
                                 CommandParameter="Broadcast"
                                 HorizontalContentAlignment="Center"
                                 Padding="12,9"
-                                Classes.active="{Binding IsBroadcastMode}" /> -->
+                                Classes.active="{Binding IsBroadcastMode}" />
 
                     </Grid>
 
@@ -176,7 +176,7 @@
                             Padding="4">
 
                         <Grid ColumnDefinitions="150,*"
-                              RowDefinitions="Auto,Auto,Auto">
+                              RowDefinitions="Auto,Auto,Auto,Auto">
 
                             <TextBlock Text="Broadcast name"
                                        VerticalAlignment="Center"
@@ -207,6 +207,20 @@
                                       ItemsSource="{Binding EncryptionModeNames}"
                                       SelectedItem="{Binding SelectedEncryption}"
                                       MinWidth="240" />
+
+                            <TextBlock Grid.Row="3"
+                                       Text="Key"
+                                       IsVisible="{Binding IsEncryptionOn}"
+                                       VerticalAlignment="Center"
+                                       Opacity="0.75" />
+
+                            <TextBox Grid.Row="3"
+                                     Grid.Column="1"
+                                     Text="{Binding BroadcastKey}"
+                                     IsVisible="{Binding IsEncryptionOn}"
+                                     PasswordChar="*"
+                                     Watermark="4-16 characters"
+                                     MinWidth="240" />
 
                         </Grid>
 
@@ -240,14 +254,12 @@
 
                         <Button Content="Start"
                                 Command="{Binding StartBroadcastCommand}"
-                                Padding="18,9" />
-
-                        <Button Content="Pause"
-                                Command="{Binding PauseBroadcastCommand}"
+                                IsEnabled="{Binding !IsBroadcasting}"
                                 Padding="18,9" />
 
                         <Button Content="Stop"
                                 Command="{Binding StopBroadcastCommand}"
+                                IsEnabled="{Binding IsBroadcasting}"
                                 Padding="18,9" />
 
                     </StackPanel>
