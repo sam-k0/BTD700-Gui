@@ -187,6 +187,7 @@ public class Btd700Driver : IDisposable
     public void SetCodec(Btd700Interop.Codec codec)
     {
         var err = Btd700Interop.DriverSetCodec(_handle, codec);
+        System.Console.WriteLine("Set codec to "+codec.ToString());
         if (err != Btd700Interop.Error.Ok)
             throw new Btd700Exception(err, "Failed to set codec");
     }

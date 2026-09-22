@@ -381,6 +381,7 @@ public partial class MainViewModel : INotifyPropertyChanged
                 Enum.TryParse<Btd700Interop.Codec>(SelectedCodec, out var codec))
             {
                 _driver.SetCodec(codec);
+                ActiveCodec = SelectedCodec;
             }
 
             RefreshCodecInfo();
@@ -522,6 +523,16 @@ public partial class MainViewModel : INotifyPropertyChanged
                 .Select(codec => codec.ToString())
                 .FirstOrDefault();
 
+            if (_isApplyingAudioConfig)
+            {
+                if (!string.IsNullOrWhiteSpace(SelectedCodec))
+                {
+                    ActiveCodec = SelectedCodec;
+                }
+
+                return;
+            }
+
             _isSyncingFromDevice = true;
             try
             {
@@ -549,6 +560,17 @@ public partial class MainViewModel : INotifyPropertyChanged
         try
         {
             var codecMask = _driver.QueryActiveCodec();
+
+            if (_isApplyingAudioConfig)
+            {
+                if (!string.IsNullOrWhiteSpace(SelectedCodec))
+                {
+                    ActiveCodec = SelectedCodec;
+                }
+
+                return;
+            }
+
             ActiveCodec = Btd700Interop.CodecToString(codecMask);
 
             var activeName = Enum.GetValues<Btd700Interop.Codec>()
