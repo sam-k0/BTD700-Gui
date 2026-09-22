@@ -11,7 +11,7 @@ Uses [btd700ctl](https://github.com/sobalap/btd700ctl/) as communication backend
 
 ### Setting up non-root access
 
-Please follow the instructions in the [btd700ctl README](vendor/btd700ctl/README.md) to set up udev rules.
+Please follow the instructions in the [btd700ctl README](https://github.com/sobalap/btd700ctl/tree/747f3d6bcac91bdb36872038225e06eebc93f07a) to set up udev rules.
 
 ### Building & Running
 
