@@ -5,6 +5,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Logging;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -20,11 +22,14 @@ public partial class MainViewModel : INotifyPropertyChanged
     private Btd700Driver? _driver;
     private bool _isApplyingAudioConfig;
     private bool _isSyncingFromDevice;
+    private AboutWindow? _aboutWindow;
+
     public ICommand ToggleConnectionCommand { get; }
     public ICommand ToggleDeviceInfoPopupCommand { get; }
     public ICommand ToggleEventLogCommand { get; }
     public ICommand StartBroadcastCommand { get; }
     public ICommand StopBroadcastCommand { get; }
+    public ICommand ShowAboutWindowCommand { get; }
 
     private bool _isConnected;
     public bool IsConnected
@@ -245,6 +250,7 @@ public partial class MainViewModel : INotifyPropertyChanged
         private set { _activeCodec = value; OnPropertyChanged(); }
     }
 
+    private string? _pendingCodecSelection;
 
 
     public ObservableCollection<string> Events { get; } = new();
@@ -274,6 +280,7 @@ public partial class MainViewModel : INotifyPropertyChanged
         ToggleEventLogCommand = new Command(ToggleEventLog);
         StartBroadcastCommand = new Command(StartBroadcast);
         StopBroadcastCommand = new Command(StopBroadcast);
+        ShowAboutWindowCommand = new Command(ShowAboutWindow);
 
         AudioModeNames = Enum.GetNames<Btd700Interop.AudioMode>();
         TransportModeNames = Enum.GetNames<Btd700Interop.TransportMode>();
@@ -380,11 +387,11 @@ public partial class MainViewModel : INotifyPropertyChanged
             if (!string.IsNullOrWhiteSpace(SelectedCodec) &&
                 Enum.TryParse<Btd700Interop.Codec>(SelectedCodec, out var codec))
             {
+                _pendingCodecSelection = SelectedCodec;
                 _driver.SetCodec(codec);
                 ActiveCodec = SelectedCodec;
             }
 
-            RefreshCodecInfo();
             AddEvent($"Audio: {SelectedAudioMode} / {SelectedTransportMode} / {SelectedCodec}");
         }
         catch (Btd700Exception ex)
@@ -440,6 +447,21 @@ public partial class MainViewModel : INotifyPropertyChanged
         {
             AddEvent($"Broadcast error: {ex.Message}");
         }
+    }
+
+    public void ShowAboutWindow()
+    {
+        if(_aboutWindow == null)
+        {
+            _aboutWindow = new AboutWindow();
+            _aboutWindow.Closed += (_,_) =>
+            {
+                _aboutWindow = null;
+            };
+        }
+
+        _aboutWindow.Show();
+        _aboutWindow.Activate();
     }
 
     private void RefreshDeviceInfo()
@@ -523,6 +545,23 @@ public partial class MainViewModel : INotifyPropertyChanged
                 .Select(codec => codec.ToString())
                 .FirstOrDefault();
 
+            if (!string.IsNullOrWhiteSpace(_pendingCodecSelection))
+            {
+                if (string.Equals(activeName, _pendingCodecSelection, StringComparison.OrdinalIgnoreCase))
+                {
+                    _pendingCodecSelection = null;
+                }
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(SelectedCodec))
+                    {
+                        ActiveCodec = SelectedCodec;
+                    }
+
+                    return;
+                }
+            }
+
             if (_isApplyingAudioConfig)
             {
                 if (!string.IsNullOrWhiteSpace(SelectedCodec))
@@ -561,6 +600,28 @@ public partial class MainViewModel : INotifyPropertyChanged
         {
             var codecMask = _driver.QueryActiveCodec();
 
+            var activeName = Enum.GetValues<Btd700Interop.Codec>()
+                .Where(codec => (codecMask & (1 << (int)codec)) != 0)
+                .Select(codec => codec.ToString())
+                .FirstOrDefault();
+
+            if (!string.IsNullOrWhiteSpace(_pendingCodecSelection))
+            {
+                if (string.Equals(activeName, _pendingCodecSelection, StringComparison.OrdinalIgnoreCase))
+                {
+                    _pendingCodecSelection = null;
+                }
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(SelectedCodec))
+                    {
+                        ActiveCodec = SelectedCodec;
+                    }
+
+                    return;
+                }
+            }
+
             if (_isApplyingAudioConfig)
             {
                 if (!string.IsNullOrWhiteSpace(SelectedCodec))
@@ -572,11 +633,6 @@ public partial class MainViewModel : INotifyPropertyChanged
             }
 
             ActiveCodec = Btd700Interop.CodecToString(codecMask);
-
-            var activeName = Enum.GetValues<Btd700Interop.Codec>()
-                .Where(codec => (codecMask & (1 << (int)codec)) != 0)
-                .Select(codec => codec.ToString())
-                .FirstOrDefault();
 
             if (activeName != null)
             {

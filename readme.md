@@ -9,16 +9,21 @@ Uses [btd700ctl](https://github.com/sobalap/btd700ctl/) as communication backend
 - Switching between supported codecs
 - Viewing HID device details (Firmware, Serial Number, Manufacturer)
 
+### Setting up non-root access
 
-### Building
+Please follow the instructions in the [btd700ctl README](vendor/btd700ctl/README.md) to set up udev rules.
+
+### Building & Running
+
+> [!NOTE]  
+> Dotnet version 8 and cmake is required to build this project.
 
 Run `build.sh` to build the project. This script will compile the source code and generate the necessary binaries.
+The buildscript will build the release config by default.
 
 If Cmake fails, clean the build dir: `rm -rf build/native` and try again.
 
-### Running
-
-By default, you need to run with sudo privileges. You can run the program with `sudo src/Btd700Ctl.Gui/bin/Release/net8.0/Btd700Ctl.Gui`
+Run the compiled program using `./src/Btd700Ctl.Gui/bin/Release/net8.0/Btd700Ctl.Gui`
 
 ### Credits
 
