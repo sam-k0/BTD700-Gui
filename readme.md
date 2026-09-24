@@ -25,6 +25,12 @@ If Cmake fails, clean the build dir: `rm -rf build/native` and try again.
 
 Run the compiled program using `./src/Btd700Ctl.Gui/bin/Release/net8.0/Btd700Ctl.Gui`
 
+### Publishing
+
+Easily done by running `publish.sh`.
+
+This creates a selfcontained build in `dist/`, which you can pack using `pack.sh`.
+
 ### Credits
 
 - Avalonia UI framework

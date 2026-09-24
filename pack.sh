@@ -1,0 +1,1 @@
+tar -czf Btd700Ctl-linux-x64.tar.gz -C dist btd700ctl-gui

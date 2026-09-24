@@ -3,7 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     x:Class="Btd700Ctl.Gui.AboutWindow"
     Width="350"
-    Height="200"
+    Height="250"
     Title="About"
     CanResize="False">
 
@@ -17,10 +17,11 @@
 
             <TextBlock Text="BTD700Ctl Gui" FontSize="20" HorizontalAlignment="Center"/>
             <TextBlock Text="Based on btd700ctl by www.github.com/sobalap" FontSize="12" HorizontalAlignment="Center"/>
-            <TextBlock Text="Avalonia UI is kinda awesome" FontSize="12" HorizontalAlignment="Center"/>
+            <TextBlock Text="Using Avalonia UI" FontSize="12" HorizontalAlignment="Center"/>
+            <TextBlock Text="{Binding Version}" FontSize="12" HorizontalAlignment="Center"/>
 
         </StackPanel>
-        <Button Grid.Row="1" Content="GitHub" HorizontalAlignment="Center" Margin="24" Padding="16,8" Command="{Binding ShowGithubCommand}"/>
+        <Button Grid.Row="1" Content="GitHub" HorizontalAlignment="Center" Margin="8" Padding="16,8" Command="{Binding ShowGithubCommand}"/>
     </Grid>
 
 </Window>
