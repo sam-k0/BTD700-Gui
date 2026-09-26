@@ -16,5 +16,8 @@
   <ItemGroup>
     <ProjectReference Include="../Btd700Ctl.Interop/Btd700Ctl.Interop.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="Assets/app-icon.ico"/>
+  </ItemGroup>
 
 </Project>

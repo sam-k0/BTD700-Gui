@@ -3,6 +3,7 @@
         xmlns:vm="using:Btd700Ctl.Gui.ViewModels"
         xmlns:sys="using:System"
         x:Class="Btd700Ctl.Gui.MainWindow"
+        Icon="/Assets/app-icon.ico"
         Title="BTD700 Control GUI"
         Width="900"
         Height="760"
